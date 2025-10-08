@@ -14,7 +14,14 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: "*", // hamma domenga ruxsat
+    methods: "GET,POST,PUT,DELETE,OPTIONS",
+    allowedHeaders: "*",
+    credentials: true,
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 
 // Ensure upload directories exist
