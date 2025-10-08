@@ -1,4 +1,6 @@
 const { Episode } = require("../models/animeModels");
+const fs = require("fs");
+const path = require("path");
 
 exports.getEpisodesByAnime = async (req, res) => {
   try {
@@ -23,15 +25,18 @@ exports.getEpisodeById = async (req, res) => {
 
 exports.createEpisode = async (req, res) => {
   try {
-    const episodeData = {
-      animeId: req.body.animeId,
-      title: req.body.title,
-      episodeNumber: req.body.episodeNumber,
-    };
+    const { animeId, title, episodeNumber } = req.body;
 
-    // ✅ Save video path if uploaded
+    if (!animeId || !title || !episodeNumber) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const episodeData = { animeId, title, episodeNumber };
+
     if (req.file) {
-      episodeData.videoURL = `/uploads/videos/${req.file.filename}`;
+      episodeData.videoURL = `${req.protocol}://${req.get(
+        "host"
+      )}/uploads/videos/${req.file.filename}`;
     }
 
     const episode = new Episode(episodeData);
@@ -39,7 +44,7 @@ exports.createEpisode = async (req, res) => {
 
     res.status(201).json(episode);
   } catch (error) {
-    console.error("Error creating episode:", error);
+    console.error("Error creating episode:", error.message);
     res.status(500).json({ error: "Failed to create episode" });
   }
 };
@@ -69,9 +74,23 @@ exports.updateEpisode = async (req, res) => {
 
 exports.deleteEpisode = async (req, res) => {
   try {
-    const deleted = await Episode.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Episode not found" });
-    res.status(200).json({ message: "Episode deleted successfully" });
+    const episode = await Episode.findById(req.params.id);
+    if (!episode) return res.status(404).json({ message: "Episode not found" });
+
+    // 🧹 Delete video file if exists
+    if (episode.videoURL) {
+      const videoPath = path.join(
+        __dirname,
+        "../../",
+        episode.videoURL.replace(`${req.protocol}://${req.get("host")}/`, "")
+      );
+      if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+    }
+
+    await episode.deleteOne();
+    res
+      .status(200)
+      .json({ message: "Episode and its video deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

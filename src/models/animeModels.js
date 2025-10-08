@@ -12,7 +12,7 @@ const animeSchema = new mongoose.Schema({
 const episodeSchema = new mongoose.Schema({
   animeId: { type: mongoose.Schema.Types.ObjectId, ref: "Anime" },
   title: String,
-  episodeNumber: { type: Number, unique: true },
+  episodeNumber: { type: Number, },
   videoURL: String,
   thumbnailURL: String,
 });

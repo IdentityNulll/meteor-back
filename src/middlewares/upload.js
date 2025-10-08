@@ -4,8 +4,10 @@ const path = require("path");
 // Storage config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    if (file.mimetype.startsWith("image")) cb(null, "uploads/images");
-    else if (file.mimetype.startsWith("video")) cb(null, "uploads/videos");
+    if (file.mimetype.startsWith("image"))
+      cb(null, path.join(__dirname, "../../uploads/images"));
+    else if (file.mimetype.startsWith("video"))
+      cb(null, path.join(__dirname, "../../uploads/videos"));
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -14,7 +16,8 @@ const storage = multer.diskStorage({
 
 // File filter
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image") || file.mimetype.startsWith("video")) cb(null, true);
+  if (file.mimetype.startsWith("image") || file.mimetype.startsWith("video"))
+    cb(null, true);
   else cb(new Error("Invalid file type"));
 };
 
