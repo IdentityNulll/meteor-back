@@ -23,25 +23,24 @@ exports.getAnimeById = async (req, res) => {
 
 exports.createAnime = async (req, res) => {
   try {
-    const animeData = {
+    // 👇 Add these two lines here
+    const baseURL = `${req.protocol}://${req.get("host")}`;
+    const imgURL = req.file
+      ? `${baseURL}/uploads/images/${req.file.filename}`
+      : null;
+
+    const newAnime = new Anime({
       title: req.body.title,
       description: req.body.description,
-      status: req.body.status,
+      imgURL, // 👈 use this variable here
       genre: req.body.genre,
-    };
+      status: req.body.status,
+    });
 
-    // ✅ Save image path if uploaded
-    if (req.file) {
-      animeData.imgURL = `/uploads/images/${req.file.filename}`;
-    }
-
-    const anime = new Anime(animeData);
-    await anime.save();
-
-    res.status(201).json(anime);
+    await newAnime.save();
+    res.status(201).json(newAnime);
   } catch (error) {
-    console.error("Error creating anime:", error);
-    res.status(500).json({ error: "Failed to create anime" });
+    res.status(500).json({ message: error.message });
   }
 };
 
