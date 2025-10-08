@@ -3,11 +3,10 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
+const fs = require("fs");
 
-// Load environment variables
 dotenv.config();
 
-// Import routes
 const animeRoutes = require("./src/routes/animeRoutes");
 const episodeRoutes = require("./src/routes/episodeRoutes");
 
@@ -18,14 +17,24 @@ app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files (images/videos)
+// Ensure upload directories exist
+const uploadDirs = [
+  path.join(__dirname, "uploads"),
+  path.join(__dirname, "uploads/images"),
+  path.join(__dirname, "uploads/videos"),
+];
+
+uploadDirs.forEach((dir) => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/anime", animeRoutes);
 app.use("/api/episodes", episodeRoutes);
 
-// Error handling for multer and others
+// Error handling
 app.use((err, req, res, next) => {
   if (err.code === "LIMIT_FILE_SIZE") {
     return res.status(400).json({ error: "File too large. Max size is 5GB." });
@@ -36,7 +45,7 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Connect to MongoDB
+// Connect to MongoDB and start server
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,

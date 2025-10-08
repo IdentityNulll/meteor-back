@@ -1,11 +1,21 @@
-const express = require('express');
-const router = express.Router()
-const animeController = require("../controllers/animeController")
+const express = require("express");
+const router = express.Router();
+const animeController = require("../controllers/animeController");
+const upload = require("../middlewares/upload"); // Multer middleware
 
-router.get("/", animeController.getAllAnime)
-router.get("/:id", animeController.getAnimeById)
-router.post("/", animeController.createAnime)
-router.put("/:id", animeController.updateAnime)
-router.delete("/:id", animeController.deleteAnime)
+// Get all anime
+router.get("/", animeController.getAllAnime);
 
-module.exports = router
+// Get one anime by ID
+router.get("/:id", animeController.getAnimeById);
+
+// Create anime with optional image upload
+router.post("/", upload.single("img"), animeController.createAnime);
+
+// Update anime with optional image upload
+router.put("/:id", upload.single("img"), animeController.updateAnime);
+
+// Delete anime
+router.delete("/:id", animeController.deleteAnime);
+
+module.exports = router;
