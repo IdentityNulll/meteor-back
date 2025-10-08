@@ -1,8 +1,7 @@
-const { Anime } = require("../models/animeModels");
+const { Anime, Episode } = require("../models/animeModels");
 const fs = require("fs");
 const path = require("path");
 
-// Get all anime
 exports.getAllAnime = async (req, res) => {
   try {
     const animes = await Anime.find();
@@ -12,7 +11,6 @@ exports.getAllAnime = async (req, res) => {
   }
 };
 
-// Get anime by ID
 exports.getAnimeById = async (req, res) => {
   try {
     const anime = await Anime.findById(req.params.id);
@@ -25,16 +23,14 @@ exports.getAnimeById = async (req, res) => {
 
 exports.createAnime = async (req, res) => {
   try {
-    // 👇 Add these two lines here
-    const baseURL = `${req.protocol}://${req.get("host")}`;
     const imgURL = req.file
-      ? `${baseURL}/uploads/images/${req.file.filename}`
+      ? `${req.protocol}://${req.get("host")}/uploads/images/${req.file.filename}`
       : null;
 
     const newAnime = new Anime({
       title: req.body.title,
       description: req.body.description,
-      imgURL, // 👈 use this variable here
+      imgURL,
       genre: req.body.genre,
       status: req.body.status,
     });
@@ -46,63 +42,68 @@ exports.createAnime = async (req, res) => {
   }
 };
 
-// Update anime
 exports.updateAnime = async (req, res) => {
   try {
-    const updatedData = { ...req.body };
+    const anime = await Anime.findById(req.params.id);
+    if (!anime) return res.status(404).json({ message: "Anime not found" });
+
+    // If a new image is uploaded, delete the old one first
+    if (req.file && anime.imgURL) {
+      const oldImagePath = path.join(
+        __dirname,
+        "../../",
+        anime.imgURL.split("/uploads/")[1]
+      );
+      if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+    }
+
+    anime.title = req.body.title || anime.title;
+    anime.description = req.body.description || anime.description;
+    anime.genre = req.body.genre || anime.genre;
+    anime.status = req.body.status || anime.status;
 
     if (req.file) {
-      updatedData.imgURL = `${req.protocol}://${req.get(
+      anime.imgURL = `${req.protocol}://${req.get(
         "host"
       )}/uploads/images/${req.file.filename}`;
     }
 
-    const updatedAnime = await Anime.findByIdAndUpdate(
-      req.params.id,
-      updatedData,
-      { new: true }
-    );
-
-    if (!updatedAnime)
-      return res.status(404).json({ message: "Anime not found" });
-
-    res.status(200).json(updatedAnime);
+    await anime.save();
+    res.status(200).json(anime);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 };
 
-// Delete anime
 exports.deleteAnime = async (req, res) => {
   try {
     const anime = await Anime.findById(req.params.id);
     if (!anime) return res.status(404).json({ message: "Anime not found" });
 
-    // 🧹 Delete the anime image if it exists
+    // 🧹 Delete anime image
     if (anime.imgURL) {
       const imagePath = path.join(
         __dirname,
         "../../",
-        anime.imgURL.replace(`${req.protocol}://${req.get("host")}/`, "")
+        anime.imgURL.split("/uploads/")[1]
       );
       if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
     }
 
-    // 🧹 Also delete all its episodes and their videos
+    // 🧹 Delete all related episodes + their videos
     const episodes = await Episode.find({ animeId: anime._id });
     for (const ep of episodes) {
       if (ep.videoURL) {
         const videoPath = path.join(
           __dirname,
           "../../",
-          ep.videoURL.replace(`${req.protocol}://${req.get("host")}/`, "")
+          ep.videoURL.split("/uploads/")[1]
         );
         if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
       }
       await ep.deleteOne();
     }
 
-    // Finally, delete the anime itself
     await anime.deleteOne();
 
     res

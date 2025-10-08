@@ -26,10 +26,8 @@ exports.getEpisodeById = async (req, res) => {
 exports.createEpisode = async (req, res) => {
   try {
     const { animeId, title, episodeNumber } = req.body;
-
-    if (!animeId || !title || !episodeNumber) {
+    if (!animeId || !title || !episodeNumber)
       return res.status(400).json({ error: "Missing required fields" });
-    }
 
     const episodeData = { animeId, title, episodeNumber };
 
@@ -54,13 +52,21 @@ exports.updateEpisode = async (req, res) => {
     const episode = await Episode.findById(req.params.id);
     if (!episode) return res.status(404).json({ message: "Episode not found" });
 
-    // Update text fields
+    // If a new video is uploaded, delete the old one first
+    if (req.file && episode.videoURL) {
+      const oldPath = path.join(
+        __dirname,
+        "../../",
+        episode.videoURL.split("/uploads/")[1] // ✅ Works both on localhost & server
+      );
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
     episode.title = req.body.title || episode.title;
     episode.episodeNumber = req.body.episodeNumber || episode.episodeNumber;
 
-    // Update video if new file uploaded
     if (req.file) {
-      episode.videoURL = `${req.protocol}://${req.get("host")}/uploads/${
+      episode.videoURL = `${req.protocol}://${req.get("host")}/uploads/videos/${
         req.file.filename
       }`;
     }
@@ -77,14 +83,14 @@ exports.deleteEpisode = async (req, res) => {
     const episode = await Episode.findById(req.params.id);
     if (!episode) return res.status(404).json({ message: "Episode not found" });
 
-    // 🧹 Delete video file if exists
+    // 🧹 Delete video file if exists (works anywhere)
     if (episode.videoURL) {
-      const videoPath = path.join(
+      const filePath = path.join(
         __dirname,
         "../../",
-        episode.videoURL.replace(`${req.protocol}://${req.get("host")}/`, "")
+        episode.videoURL.split("/uploads/")[1]
       );
-      if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
 
     await episode.deleteOne();
