@@ -15,6 +15,7 @@ const episodeSchema = new mongoose.Schema({
   episodeNumber: { type: Number, },
   videoURL: String,
   thumbnailURL: String,
+  views : { type: Number, default: 0 },
 });
 
 const Anime = mongoose.model("Anime", animeSchema);
