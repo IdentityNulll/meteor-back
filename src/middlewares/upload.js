@@ -14,11 +14,29 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter
+
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image") || file.mimetype.startsWith("video"))
+  const allowedExts = [
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".mp4",
+    ".mkv",
+    ".mov",
+    ".webm",
+  ];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (
+    file.mimetype.startsWith("image") ||
+    file.mimetype.startsWith("video") ||
+    allowedExts.includes(ext)
+  ) {
     cb(null, true);
-  else cb(new Error("Invalid file type"));
+  } else {
+    cb(new Error("Invalid file type"));
+  }
 };
 
 const upload = multer({ storage, fileFilter });
