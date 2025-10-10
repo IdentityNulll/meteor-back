@@ -9,6 +9,7 @@ dotenv.config();
 
 const animeRoutes = require("./src/routes/animeRoutes");
 const episodeRoutes = require("./src/routes/episodeRoutes");
+const userRoutes = require("./src/routes/userRoutes");
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Routes
 app.use("/api/anime", animeRoutes);
 app.use("/api/episodes", episodeRoutes);
+app.use("/api/users", userRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {
