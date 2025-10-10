@@ -26,6 +26,7 @@ exports.registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       profilePic: profilePicPath,
+      isAdmin: false,
     });
 
     await user.save();
